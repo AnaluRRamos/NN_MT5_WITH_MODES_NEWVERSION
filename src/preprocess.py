@@ -83,6 +83,12 @@ def create_dataloaders(data_dir, tokenizer, batch_size, num_workers=4):
     train_dataset = T5Dataset(data_dir=os.path.join(data_dir, 'train'), source_ext='_en.txt', target_ext='_pt.txt', tokenizer=tokenizer)
     val_dataset = T5Dataset(data_dir=os.path.join(data_dir, 'val'), source_ext='_en.txt', target_ext='_pt.txt', tokenizer=tokenizer)
     test_dataset = T5Dataset(data_dir=os.path.join(data_dir, 'test'), source_ext='_en.txt', target_ext='_pt.txt', tokenizer=tokenizer)
+
+    # Debugging: Print lengths of each dataset
+    print(f"Number of training samples: {len(train_dataset)}")
+    print(f"Number of validation samples: {len(val_dataset)}")
+    print(f"Number of test samples: {len(test_dataset)}")
+
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
