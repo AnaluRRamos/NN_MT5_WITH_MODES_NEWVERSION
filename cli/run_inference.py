@@ -1,6 +1,12 @@
+import sys
+import os
+
+# Add the project root to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import argparse
 import torch
-from transformers import T5Tokenizer
+from transformers import T5TokenizerFast
 from src.model import T5FineTuner
 from src.utils import load_data
 from src.config import Config
@@ -14,7 +20,7 @@ def main():
 
     args = parser.parse_args()
 
-    tokenizer = T5Tokenizer.from_pretrained('t5-base')
+    tokenizer = T5TokenizerFast.from_pretrained('t5-base')
     model = T5FineTuner.load_from_checkpoint(args.checkpoint_path, tokenizer=tokenizer, mode=args.mode)
 
     _, _, test_dataloader = load_data(args.data_dir, tokenizer, args.batch_size)
