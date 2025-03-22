@@ -154,12 +154,15 @@ class MT5DatasetPreprocessor:
     def align_ne_tags_with_tokens(self, text, entities, offsets, input_ids):
         tokens = self.tokenizer.convert_ids_to_tokens(input_ids.tolist())
         aligned_tags = []
-        for token, (start, end) in zip(tokens, offsets.tolist()):
+        for i, (token, (start, end)) in enumerate(zip(tokens, offsets.tolist())):
+            token_center = (start + end) / 2.0
             tag = 'O'
             for ent_start, ent_end, ent_label in entities:
-                if (start >= ent_start and end <= ent_end) or (start < ent_end and end > ent_start):
+                if token_center >= ent_start and token_center <= ent_end:
                     tag = ent_label
                     break
+            if i > 0 and not token.startswith("▁") and aligned_tags[i-1] != 'O':
+                tag = aligned_tags[i-1]
             aligned_tags.append(tag)
         tag_ids = [self.tag_to_idx.get(tag, 0) for tag in aligned_tags]
         return torch.tensor(tag_ids, dtype=torch.long)
