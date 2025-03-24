@@ -73,24 +73,19 @@ class MT5FineTuner(pl.LightningModule):
                 loss = loss_fn(lm_logits.view(-1, lm_logits.size(-1)), labels.view(-1))
             
 
-            ###CODE CHANGED: Gradual weight
+            ###CODE CHANGED: Gradual weight with leaky rely 
             elif self.mode == 1:
-    
                 warmup_epochs = getattr(ModeConfig, "WARMUP_EPOCHS", 5)
                 scaling = min(1.0, self.current_epoch / warmup_epochs)
-                current_weight_factor = 1.0 +(ModeConfig.MODE_1_WEIGHT-1) * scaling
-                #current_weight_factor = ModeConfig.MODE_1_WEIGHT * scaling
-
-            
+                current_weight_factor = gradual_weight_leaky(scaling, negative_slope=0.1, target_weight=ModeConfig.MODE_1_WEIGHT)
+    
                 label_smoothing_loss_fn = nn.CrossEntropyLoss(ignore_index=-100, label_smoothing=0.1)
                 lm_logits_flat = lm_logits.view(-1, lm_logits.size(-1))
                 labels_flat = labels.view(-1)
                 non_ner_mask = (ne_tag_mask.view(-1) == 0)
                 non_ner_loss = label_smoothing_loss_fn(lm_logits_flat[non_ner_mask], labels_flat[non_ner_mask])
-
     
                 ner_loss = entity_aware_loss(lm_logits, labels, ne_tag_mask, weight_factor=current_weight_factor)
-    
     
                 loss = non_ner_loss + ner_loss
 
