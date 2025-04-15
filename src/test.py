@@ -1,25 +1,25 @@
-import comet_ml
+
+import comet_ml  
 import torch
 from transformers import MT5TokenizerFast
 from pytorch_lightning import Trainer
-from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.loggers import CometLogger
 from src.model import MT5FineTuner
 from src.utils import MT5DatasetPreprocessed
 from src.config import Config
-#import wandb
 
 def test_model(args):
     """Runs the testing process for the MT5FineTuner model."""
     
     # Load tokenizer
     tokenizer = MT5TokenizerFast.from_pretrained("google/mt5-base")
-
+    
     # Load preprocessed test data
     test_dataset = MT5DatasetPreprocessed(args.test_data)
     test_dataloader = torch.utils.data.DataLoader(
         test_dataset, batch_size=args.batch_size, shuffle=False
     )
-
+    
     # Load model from checkpoint
     model = MT5FineTuner.load_from_checkpoint(
         args.checkpoint,
@@ -31,22 +31,32 @@ def test_model(args):
         target_max_length=Config.TARGET_MAX_LENGTH,
         mode=args.mode
     )
-
-    # Initialize WandB logger
-    #wandb_logger = WandbLogger(project="my_project_name", name="test_run")
+    
+    # Comet Logger (optional)
     comet_logger = CometLogger(api_key="HvL5dz50hej2GlMfczDmW99Hk", project_name="your_project_name")
-
-
-    # Initialize Trainer
+    
+    # Trainer
     trainer = Trainer(
         accelerator="gpu",
         devices=1,
-        #logger=wandb_logger
         logger=comet_logger
     )
-
+    
     # Run test
-    trainer.test(model, dataloaders=test_dataloader)
+    results = trainer.test(model, dataloaders=test_dataloader)
 
-    # Finish WandB run
-    #wandb.finish()
+    print(f"Testing completed.")
+    print(f"BLEU scores saved to: bleu_scores_mode_{args.mode}.txt")
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--test_data", type=str, default="path/to/test/data")
+    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--checkpoint", type=str, required=True)
+    parser.add_argument("--mode", type=int, default=0)
+    args = parser.parse_args()
+    test_model(args)
+
+
+
