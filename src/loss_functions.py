@@ -2,10 +2,10 @@ import torch
 from torch import nn
 
 def gradual_weight_leaky(scaling, negative_slope=0.1, target_weight=1.5):
-    # negative_slope is how much negative values are allowed to leak through in LeakyReLU.
+    
     if scaling == 0:
         return 1.0
-    x = scaling - 0.5 #Centers the scaling range at 0.
+    x = scaling - 0.5 
     activated = nn.LeakyReLU(negative_slope=negative_slope)(torch.tensor(x))
     adjusted = activated + 0.5
     normalized = (adjusted - 0.5) * 2
