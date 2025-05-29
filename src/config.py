@@ -9,4 +9,4 @@ class Config:
     ACCUMULATE_GRAD_BATCHES = 4  # This defines how many batches to accumulate gradients for
     PATIENCE = 3  # Number of epochs with no improvement after which training will be stopped
     CHECKPOINT_PATH = "PATH/FILE_NAME"  # Update this
-    TEST_DATA_PATH = "preprocessed_files/test/preprocessed_test.pt"
+    TEST_DATA_PATH = "PATH/FILE_NAME"
