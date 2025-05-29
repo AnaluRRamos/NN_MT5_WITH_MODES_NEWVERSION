@@ -37,7 +37,7 @@ class MT5DatasetPreprocessor:
             raise ValueError("Ensure that the model 'Kushtrim/bert-base-cased-biomedical-ner' is available.") from e
 
         try:
-            
+            # Adding BioBERT model for additional NER tags
             self.tokenizer_biobert = AutoTokenizer.from_pretrained("dmis-lab/biobert-base-cased-v1.1")
             self.model_biobert = AutoModelForTokenClassification.from_pretrained("dmis-lab/biobert-base-cased-v1.1")
             self.ner_pipeline_biobert = pipeline("ner", model=self.model_biobert, tokenizer=self.tokenizer_biobert, aggregation_strategy="simple")
@@ -45,7 +45,7 @@ class MT5DatasetPreprocessor:
         except Exception as e:
             raise ValueError("Ensure that the BioBERT model 'dmis-lab/biobert-base-cased-v1.1' is available.") from e
 
-        
+        # Extend the tag dictionary with tags coming from BioBERT (use appropriate keys/suffixes)
         self.tag_to_idx = {
             'O': 0, 'AMINO_ACID': 1, 'ANATOMICAL_SYSTEM': 2, 'CANCER': 3, 'CELL': 4, 'CELLULAR_COMPONENT': 5,
             'DEVELOPING_ANATOMICAL_STRUCTURE': 6, 'GENE_OR_GENE_PRODUCT': 7, 'IMMATERIAL_ANATOMICAL_ENTITY': 8,
@@ -53,8 +53,9 @@ class MT5DatasetPreprocessor:
             'ORGANISM_SUBSTANCE': 13, 'PATHOLOGICAL_FORMATION': 14, 'SIMPLE_CHEMICAL': 15, 'TISSUE_SPACY': 16,
             'SMALL_MOLECULE': 17, 'GENEPROD': 18, 'SUBCELLULAR': 19, 'CELL_LINE': 20, 'CELL_TYPE': 21,
             'TISSUE_HF': 22, 'ORGANISM_HF': 23, 'DISEASE': 24, 'EXP_ASSAY': 25,
-            'AMINO_ACID_BIOBERT': 26, 'ANATOMICAL_SYSTEM_BIOBERT': 27, 'CANCER_BIOBERT': 28,
-            # BioBert no label
+           
+            'AMINO_ACID_BIOBERT': 26, 'ANATOMICAL_SYSTEM_BIOBERT': 27, 'CANCER_BIOBERT': 28, # but not using BIOBERT
+            
         }
     def align_biobert_tags_with_tokens(self, text, offsets, input_ids):
         """
@@ -62,25 +63,25 @@ class MT5DatasetPreprocessor:
         For each token, it returns 1 if the token overlaps with a BioBERT entity
         (i.e. with label "LABEL_1") and 0 otherwise.
         """
- 
+   
         tokens = self.tokenizer.convert_ids_to_tokens(input_ids.tolist())
     
-   
+    
         bio_results = self.ner_pipeline_biobert(text)
     
    
         bio_entities = []
         for entity in bio_results:
-        
+        # Check if the model predicted the entity as LABEL_1
             if entity.get("entity_group") == "LABEL_1":
                 bio_entities.append((entity["start"], entity["end"]))
     
    
         aligned_bio_tags = []
         for token, (start, end) in zip(tokens, offsets.tolist()):
-            tag = 0  # no entity 0
+            tag = 0  # Default: no entity
             for ent_start, ent_end in bio_entities:
-            # If entity then 1 
+            # If the token's span overlaps with the entity span, mark as 1
                 if (start >= ent_start and end <= ent_end) or (start < ent_end and end > ent_start):
                     tag = 1
                     break
@@ -102,7 +103,7 @@ class MT5DatasetPreprocessor:
             for start, end, label in entities_spacy
         ]
 
-       
+
         ner_results_batch = self.ner_pipeline([text], batch_size=8)
         entities_hf = []
         for ner_results in ner_results_batch:
@@ -124,7 +125,7 @@ class MT5DatasetPreprocessor:
                     ent_label += '_HF'
                 entities_hf.append((ent_start, ent_end, ent_label))
 
-       
+      
         ner_results_biobert_batch = self.ner_pipeline_biobert([text], batch_size=8)
         entities_biobert = []
         for ner_results in ner_results_biobert_batch:
@@ -142,15 +143,28 @@ class MT5DatasetPreprocessor:
                         merged_entities.append((ent_start, ent_end, ent_label))
                         prev_entity = (ent_start, ent_end, ent_label)
             for ent_start, ent_end, ent_label in merged_entities:
-               
+                
                 ent_label = f"{ent_label}_BIOBERT"
                 entities_biobert.append((ent_start, ent_end, ent_label))
 
-       
+        # Combine and sort all entities
         combined_entities = entities_spacy + entities_hf + entities_biobert
         combined_entities.sort(key=lambda x: (x[0], x[1]))
         return combined_entities
 
+    """def align_ne_tags_with_tokens(self, text, entities, offsets, input_ids):
+        tokens = self.tokenizer.convert_ids_to_tokens(input_ids.tolist())
+        aligned_tags = []
+        for token, (start, end) in zip(tokens, offsets.tolist()):
+            tag = 'O'
+            for ent_start, ent_end, ent_label in entities:
+                if (start >= ent_start and end <= ent_end) or (start < ent_end and end > ent_start):
+                    tag = ent_label
+                    break
+            aligned_tags.append(tag)
+        tag_ids = [self.tag_to_idx.get(tag, 0) for tag in aligned_tags]
+        return torch.tensor(tag_ids, dtype=torch.long)"""
+    
     def align_ne_tags_with_tokens(self, text, entities, offsets, input_ids):
         tokens = self.tokenizer.convert_ids_to_tokens(input_ids.tolist())
         aligned_tags = []
@@ -182,11 +196,13 @@ class MT5DatasetPreprocessor:
         attention_mask = tokenized['attention_mask'].squeeze(0)
         offsets = tokenized['offset_mapping'].squeeze(0)
 
-  
+   
         entities = self.combined_ne_tag(source_text)
         ne_tags = self.align_ne_tags_with_tokens(source_text, entities, offsets, input_ids)
 
-        # not using for now
+
+
+    # Get binary BioBERT entity tags
         bio_ner_tags = self.align_biobert_tags_with_tokens(source_text, offsets, input_ids)
 
         tokenized_target = self.tokenizer(
@@ -200,8 +216,8 @@ class MT5DatasetPreprocessor:
         target_ids = tokenized_target['input_ids'].squeeze(0)
         target_mask = tokenized_target['attention_mask'].squeeze(0)
 
-  
-        return input_ids, attention_mask, ne_tags, target_ids, target_mask  #bio_ner_tags
+    # You could then combine these outputs as needed.
+        return input_ids, attention_mask, ne_tags, target_ids, target_mask
 
 
     def process_all(self, source_files, target_files):
@@ -215,7 +231,9 @@ class MT5DatasetPreprocessor:
 
     def print_alignment_table(self, text):
         """
-        For debugging: prints a table with each token, its character offsets, and the assigned NE tag.
+        For debugging and checking alignmemnt: prints a table with each token, its character offsets, and the assigned NE tag.
+        It can be removed.
+
         """
         tokenized = self.tokenizer(
             text, truncation=True, padding='max_length', max_length=self.max_len,
@@ -244,13 +262,13 @@ if __name__ == "__main__":
     parser.add_argument("--output_val", type=str, default="./preprocessed_files/val/preprocessed_val.pt", help="File to save preprocessed validation data.")
     parser.add_argument("--output_test", type=str, default="./preprocessed_files/test/preprocessed_test.pt", help="File to save preprocessed test data.")
     parser.add_argument("--max_len", type=int, default=256, help="Maximum token length.")
-    parser.add_argument("--debug_text", type=str, help="A text sample to print alignment table for debugging.", default="Sample biomedical text to check alignment.")
+    parser.add_argument("--debug_text", type=str, help="A text sample to print alignment table for debugging.", default="The BRCA1 gene is crucial for DNA repair and is linked to an increased risk of breast cancer.")
     args = parser.parse_args()
 
     tokenizer = MT5TokenizerFast.from_pretrained("google/mt5-base", legacy=False)
     preprocessor = MT5DatasetPreprocessor(data_dir=args.data_dir, tokenizer=tokenizer, max_len=args.max_len)
 
-  
+    # Print alignment table for debugging purposes
     print("Alignment Table for Debug Text:")
     preprocessor.print_alignment_table(args.debug_text)
 
