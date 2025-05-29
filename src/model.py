@@ -1,4 +1,3 @@
-
 import torch
 import pytorch_lightning as pl
 from torch import nn
@@ -18,8 +17,11 @@ from comet import download_model, load_from_checkpoint
 
 from torchmetrics.text.bleu import BLEUScore
 
-from datasets import load_metric
-chrf_metric = load_metric("chrf")
+#from datasets import load_metric
+import evaluate
+bleu_metric = evaluate.load("sacrebleu")
+chrf_metric = evaluate.load("chrf")
+
 
 # Download NLTK METEOR data (only needed once)
 nltk.download('wordnet')
@@ -361,9 +363,9 @@ class MT5FineTuner(pl.LightningModule):
         sorted_preds = sorted(self.all_test_preds, key=lambda x: x["bleu"], reverse=True)
 
     # Get top 10 and bottom 10 translations
-        top_10 = sorted_preds[:10]
-        bottom_10 = sorted_preds[-10:]
-        top_100 = sorted_preds[:100]
+        #top_10 = sorted_preds[:10]
+        #bottom_10 = sorted_preds[-10:]
+        top_1800 = sorted_preds[:1800]
 
         def save_translations(filename, translations):
             with open(filename, "w", encoding="utf-8") as f:
@@ -374,9 +376,9 @@ class MT5FineTuner(pl.LightningModule):
                     f.write(f"Reference: {entry['reference']}\n\n")
 
     # Save files
-        save_translations(f"top_10_test_translations_mode_{self.mode}.txt", top_10)
-        save_translations(f"worst_10_test_translations_mode_{self.mode}.txt", bottom_10)
-        save_translations(f"top_100_test_translations_mode_{self.mode}.txt", top_100)
+        #save_translations(f"top_10_test_translations_mode_{self.mode}.txt", top_10)
+        #save_translations(f"worst_10_test_translations_mode_{self.mode}.txt", bottom_10)
+        save_translations(f"top_1800_test_translations_may__mode_{self.mode}.txt", top_1800)
 
     # Log average BLEU score
         avg_bleu = sum([entry["bleu"] for entry in self.all_test_preds]) / len(self.all_test_preds) if self.all_test_preds else 0.0
@@ -508,25 +510,3 @@ class MT5FineTuner(pl.LightningModule):
 
     def test_dataloader(self):
         return self._test_dataloader
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-       
