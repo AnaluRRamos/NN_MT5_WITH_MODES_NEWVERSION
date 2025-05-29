@@ -5,7 +5,7 @@ from transformers import MT5ForConditionalGeneration, MT5TokenizerFast
 import sacrebleu
 from rouge_score import rouge_scorer
 from nltk.tokenize import word_tokenize
-import nltk  # Ensure correct import
+import nltk 
 from src.mode_config import ModeConfig
 from src.loss_functions import entity_aware_loss, ner_auxiliary_loss, placeholder_loss, gradual_weight_leaky
 import logging
@@ -58,7 +58,7 @@ class MT5FineTuner(pl.LightningModule):
         # Initialize ROUGE scorer
         self.rouge_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
         # Initialize BLEU scorer using sacrebleu
-        #self.metric_bleu = sacrebleu.metrics.BLEU() changes 11/03
+        #self.metric_bleu = sacrebleu.metrics.BLEU() 
         self.metric_bleu = None  # sacrebleu is used at the sentence level now
 
         # COMET Metric 
@@ -83,8 +83,8 @@ class MT5FineTuner(pl.LightningModule):
                 input_embeds = input_embeds + ne_embeds
 
                 outputs = self.model(
-                    inputs_embeds=input_embeds,  #  [CHANGED] Use inputs_embeds instead of input_ids
-                    attention_mask=source_mask, # tells where the real tokens are 
+                    inputs_embeds=input_embeds,  
+                    attention_mask=source_mask,
                     labels=labels,
                     return_dict=True
                 )
@@ -133,13 +133,13 @@ class MT5FineTuner(pl.LightningModule):
 
         else:
             if self.mode == 1 and ne_tag_mask is not None:
-            # 🔧 [ADDED] Inject NE embeddings during inference too (for generation)
+            
                 input_embeds = self.model.encoder.embed_tokens(source_token_ids)
                 ne_embeds = self.ne_tag_embedding(ne_tag_mask)
                 input_embeds = input_embeds + ne_embeds
 
                 generated_token_ids = self.model.generate(
-                    inputs_embeds=input_embeds,  # 🔧 [CHANGED] Use inputs_embeds instead of input_ids
+                    inputs_embeds=input_embeds,  
                     attention_mask=source_mask,
                     max_length=self.target_max_length,
                     num_beams=8,
@@ -167,13 +167,13 @@ class MT5FineTuner(pl.LightningModule):
             ne_tag_mask=source_ne_tags.to(self.device),
             training=True
         )
-        # CHANGED: Added sync_dist=True for distributed logging.
+    
        # self.log('train_loss', loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         source_token_ids, source_mask, source_ne_tags, target_token_ids, target_mask = batch
-        # CHANGED: Ensure consistent device assignment using self.device
+        
         val_loss = self(
             source_token_ids.to(self.device),
             source_mask.to(self.device),
