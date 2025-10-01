@@ -9,9 +9,10 @@ A neural machine-translation system based on mT5 that incorporates biomedical na
 
 ## Features
 
-- 🔬 **Entity-aware encoder**: highlights genes, chemicals, diseases, etc.  
-- ⚖️ **Dynamic loss weighting**: penalizes mistakes on entities more heavily.  
-- 📊 Includes scripts for BLEU, CHRF, METEOR, ROUGE evaluation.
+- Entity-aware encoder: highlights genes, chemicals, diseases, etc.
+- You have two modes, mode 0 a fine tuned model, and mode 1 a entity aware for biomedical terms model.
+- Dynamic loss weighting: penalizes mistakes on entities more heavily.  
+- Includes scripts for BLEU, CHRF, METEOR, ROUGE evaluation.
 - It also includes a Manual tailored for Human evaluation 
 
 ## Table of Contents
