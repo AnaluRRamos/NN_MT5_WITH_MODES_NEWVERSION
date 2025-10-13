@@ -121,7 +121,7 @@ class MT5FineTuner(pl.LightningModule):
 
                 loss = non_ner_loss + ner_loss
 
-            elif self.mode == 2: # still did not touch this one, only if i have time will use it 
+            elif self.mode == 2: # for future create different modes to test 
                 base_loss = nn.CrossEntropyLoss(ignore_index=-100)(lm_logits.view(-1, lm_logits.size(-1)), labels.view(-1))
                 loss = placeholder_loss(base_loss, ne_tag_mask) * ModeConfig.MODE_2_WEIGHT
 
