@@ -5,7 +5,6 @@
 
 A neural machine translation (NMT) system based on **mT5** that incorporates **biomedical named-entity information** to improve translation fidelity on domain-specific terms.
 
-This repository accompanies the paper *“An Investigation of Entity-Aware Neural Machine Translation for Biomedical Texts”* (submitted to **LREC 2026**) and serves as a **language resource** for reproducible biomedical translation research.
 
 ---
 
