@@ -216,7 +216,7 @@ class MT5DatasetPreprocessor:
         target_ids = tokenized_target['input_ids'].squeeze(0)
         target_mask = tokenized_target['attention_mask'].squeeze(0)
 
-    # You could then combine these outputs as needed.
+    
         return input_ids, attention_mask, ne_tags, target_ids, target_mask
 
 
