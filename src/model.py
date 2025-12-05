@@ -36,7 +36,7 @@ comet_logger = CometLogger(
 logging.basicConfig(level=logging.INFO)
 
 class MT5FineTuner(pl.LightningModule):
-    def __init__(self, tokenizer, train_dataloader, val_dataloader, test_dataloader, learning_rate, target_max_length=600, mode=0, num_ne_tags=26):
+    def __init__(self, tokenizer, train_dataloader, val_dataloader, test_dataloader, learning_rate, target_max_length=600, mode=0, num_ne_tags=29):
         super(MT5FineTuner, self).__init__()
         self._train_dataloader = train_dataloader
         self._val_dataloader = val_dataloader
